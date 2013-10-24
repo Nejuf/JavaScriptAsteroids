@@ -4,6 +4,7 @@
 	var Game = Asteroids.Game = function(canvas) {
 		this.ctx = canvas.getContext("2d");
 		this.asteroids = [];
+		this.bullets = [];
 		this.addAsteroids(40);
 		this.ship = new Asteroids.Ship([WIDTH / 2, HEIGHT / 2]);
 		this.bindKeyHandlers();
@@ -26,11 +27,16 @@
 		this.asteroids.forEach( function(asteroid) {
 			asteroid.draw(that.ctx);
 		});
+		this.bullets.forEach( function(bullet) {
+			bullet.draw(that.ctx);
+		});
 	}
 
 	Game.prototype.move = function() {
 		this.ship.move();
+		this.ship.keepOnScreen(WIDTH, HEIGHT);
 		var onScreenAsteroids = [];
+		var onScreenBullets = [];
 		this.asteroids.forEach( function(asteroid) {
 			asteroid.move();
 			if(asteroid.onScreen(WIDTH, HEIGHT)){
@@ -41,8 +47,26 @@
 			}
 		});
 		this.asteroids = onScreenAsteroids;
+
+		this.bullets.forEach( function(bullet) {
+			bullet.move();
+			if(bullet.onScreen(WIDTH, HEIGHT)){
+				onScreenBullets.push(bullet);
+			}
+			else{
+				//delete asteroid;//How to remove asteroid?
+			}
+		});
+		this.bullets = onScreenBullets;
+
 	}
 
+	Game.prototype.fireBullet = function() {
+		var bullet = this.ship.fireBullet()
+		if ( bullet != undefined) {
+			this.bullets.push(bullet);
+		}
+	}
 	Game.prototype.step = function() {
 		this.move();
 		this.checkCollisions();
@@ -58,7 +82,15 @@
 		this.asteroids.forEach( function(asteroid) {
 			if (asteroid.isCollidedWith(that.ship)) {
 				that.ship.explode();
-				alert("Game Over!")
+				// alert("Game Over!")
+			}
+		});
+
+		this.bullets.forEach(function(bullet){
+			var hitAsteroid = bullet.hitAsteroids(that.asteroids);
+			if(hitAsteroid){
+				that.removeBullet(bullet);
+				that.removeAsteroid(hitAsteroid);
 			}
 		});
 	}
@@ -68,6 +100,14 @@
 		key('down', function(){ this.power([0,1]);}.bind(this.ship));
 		key('left', function(){ this.power([-1,0]);}.bind(this.ship));
 		key('right', function(){ this.power([1,0]);}.bind(this.ship));
-
+		key('space', function(){ this.fireBullet();}.bind(this));
 	}
+
+	Game.prototype.removeBullet = function(bullet){
+		this.bullets.splice(this.bullets.indexOf(bullet),1);
+	}
+	Game.prototype.removeAsteroid = function(asteroid){
+		this.asteroids.splice(this.asteroids.indexOf(asteroid),1);
+	}
+
 })(this);
